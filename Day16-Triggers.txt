@@ -1,0 +1,236 @@
+Triggers
+
+-->A trigger is a special type of stored program that automatically executes in response to specific event INSERT,UPDATE,DELETE occurring on a specified table.unlike stored procedure.A triiger is never called directly .The database enginee invokes it automactaically when the trigerring event happens
+Syntax:
+DELIMETER //
+CREATE TRIGGER trigger_name
+{BEFORE|AFTER}{INSERT|UPDATE|DELETE}
+on table_name FOR EACH ROW
+BEGIN
+  -----trigger logic
+  -----use new.column-name for inserted/updated values
+  ----use old.column-name for deleted/previous values
+END //
+DELIMETER ;
+
+BEFORE: Trigger fires before the triggering event applied to the table. often used for validation
+AFTER: Trigger fires after the triggering event has been applied.Often used for auditing/logging
+NEW: Return the new row values. Available in INSERT and UPDATE triggers
+OLD: refers to the row values before the change available on UPDATE and DELETE
+FOR EACH ROW: Required in MYSQL the trigger body runs once per affected row
+
+CREATE TABLE Employees (
+    emp_id INT PRIMARY KEY,
+    emp_name VARCHAR(50),
+    department VARCHAR(30),
+    salary DECIMAL(10,2),
+    experience INT,
+    city VARCHAR(30)
+);
+
+
+
+INSERT INTO Employees VALUES
+(101,'Rahul','IT',65000,5,'Hyderabad'),
+(102,'Priya','HR',45000,3,'Chennai'),
+(103,'Amit','Finance',70000,6,'Bangalore'),
+(104,'Sneha','IT',80000,8,'Hyderabad'),
+(105,'Kiran','Sales',40000,2,'Pune');
+
+
+
+
+CREATE TABLE Employee_Audit(
+    audit_id INT AUTO_INCREMENT PRIMARY KEY,
+    emp_id INT,
+    action_type VARCHAR(20),
+    old_salary DECIMAL(10,2),
+    new_salary DECIMAL(10,2),
+    action_time DATETIME
+);
+
+
+-- Don't allow employees salaray less than 20000
+
+DELIMITER //
+CREATE TRIGGER TRG_BEFORE_INSERT_SAL
+BEFORE INSERT
+ON EMPLOYEES
+FOR EACH ROW
+BEGIN 
+    IF NEW.SALARY<20000 THEN
+    SIGNAL SQLSTATE '45000'
+    SET MESSAGE_TEXT='SALARY CANNOT BE LESS THAN 20000';
+    END IF;
+END //
+
+DELIMETER ;
+INSERT INTO EMPLOYEES VALUES(106,'VASU','IT',15000,2,'DELHI');
+
+ERROR 1644 (45000): SALARY CANNOT BE LESS THAN 20000
+
+-- Name should be in upper name 
+
+DELIMITER //
+CREATE TRIGGER TRG_BEFORE_INSERT_UPPERCASE
+BEFORE INSERT
+ON EMPLOYEES
+FOR EACH ROW
+BEGIN
+     SET NEW.EMP_NAME=UPPER(NEW.EMP_NAME);
+END //
+
+DELIMITER ;
+INSERT INTO EMPLOYEES VALUES(107,'hari','hr',35000,4,'Mumbai');
+
+SELECT*FROM EMPLOYEES;
++--------+----------+------------+----------+------------+-----------+
+| emp_id | emp_name | department | salary   | experience | city      |
++--------+----------+------------+----------+------------+-----------+
+|    101 | Rahul    | IT         | 65000.00 |          5 | Hyderabad |
+|    102 | Priya    | HR         | 45000.00 |          3 | Chennai   |
+|    103 | Amit     | Finance    | 70000.00 |          6 | Bangalore |
+|    104 | Sneha    | IT         | 80000.00 |          8 | Hyderabad |
+|    105 | Kiran    | Sales      | 40000.00 |          2 | Pune      |
+|    107 | HARI     | hr         | 35000.00 |          4 | Mumbai    |
++--------+----------+------------+----------+------------+-----------+
+
+DELIMITER //
+CREATE TRIGGER TRG_BEFORE_update_salary
+BEFORE UPDATE 
+ON EMPLOYEES
+FOR EACH ROW
+BEGIN 
+     IF NEW.SALARY<OLD.SALARY THEN
+SIGNAL SQLSTATE '45000'
+SET MESSAGE_TEXT='SALARY CANNOT BE REDUCED';
+END IF;
+END //
+
+DELIMITER ;
+UPDATE EMPLOYEES SET SALARY=3000 WHERE EMP_ID=101;
+
+ERROR 1644 (45000): SALARY CANNOT BE REDUCED
+mysql>  UPDATE EMPLOYEES SET SALARY=70000 WHERE EMP_ID=101;
+Query OK, 1 row affected (0.04 sec)
+
+
+DELIMITER //
+CREATE TRIGGER TRG_BEFORE_DELETE_department
+BEFORE DELETE 
+ON EMPLOYEES
+FOR EACH ROW
+BEGIN 
+     IF OLD.DEPARTMENT='IT' THEN
+SIGNAL SQLSTATE '45000'
+SET MESSAGE_TEXT='DEPARTMENT CANNOT BE DELETED';
+END IF;
+END //
+
+DELIMITER ;
+DELETE EMPLOYEES  WHERE EMP_ID=101;
+
+ERROR 1644 (45000): DEPARTMENT CANNOT BE DELETED
+
+---------------------------AFTER-----------------------------------
+
+DELIMITER //
+CREATE TRIGGER TRG_AFTER_INSERT
+AFTER INSERT 
+ON EMPLOYEES
+FOR EACH ROW
+BEGIN
+     INSERT INTO EMPLOYEE_AUDIT
+     (EMP_ID,ACTION_TYPE,NEW_SALARY,ACTION_TIME)
+     VALUES
+     (NEW.EMP_ID,'INSERT',NEW.SALARY,NOW());
+END //
+
+DELIMITER ;
+INSERT INTO EMPLOYEES VALUES(108,'arjun','finance',40000,5,'vjy');
+
+ select*from  EMPLOYEES;
++--------+----------+------------+----------+------------+-----------+
+| emp_id | emp_name | department | salary   | experience | city      |
++--------+----------+------------+----------+------------+-----------+
+|    101 | Rahul    | IT         | 70000.00 |          5 | Hyderabad |
+|    102 | Priya    | HR         | 45000.00 |          3 | Chennai   |
+|    103 | Amit     | Finance    | 70000.00 |          6 | Bangalore |
+|    104 | Sneha    | IT         | 80000.00 |          8 | Hyderabad |
+|    105 | Kiran    | Sales      | 40000.00 |          2 | Pune      |
+|    107 | HARI     | hr         | 35000.00 |          4 | Mumbai    |
+|    108 | ARJUN    | finance    | 40000.00 |          5 | vjy       |
++--------+----------+------------+----------+------------+-----------+
+7 rows in set (0.00 sec)
+
+mysql> select*from EMPLOYEE_AUDIT;
++----------+--------+-------------+------------+------------+---------------------+
+| audit_id | emp_id | action_type | old_salary | new_salary | action_time         |
++----------+--------+-------------+------------+------------+---------------------+
+|        1 |    108 | INSERT      |       NULL |   40000.00 | 2026-09-15 10:19:55 |
++----------+--------+-------------+------------+------------+---------------------+
+
+DELIMITER //
+CREATE TRIGGER TRG_AFTER_UPDATE
+AFTER UPDATE 
+ON EMPLOYEES
+FOR EACH ROW
+BEGIN
+     INSERT INTO EMPLOYEE_AUDIT
+     (EMP_ID,ACTION_TYPE,OLD_SALARY,NEW_SALARY,ACTION_TIME)
+     VALUES
+     (NEW.EMP_ID,'INSERT',OLD.SALARY,NEW.SALARY,NOW());
+END //
+
+DELIMITER ;
+DELIMITER ;
+mysql> UPDATE EMPLOYEES SET SALARY=70000 WHERE EMP_ID=105;
+Query OK, 1 row affected (0.04 sec)
+Rows matched: 1  Changed: 1  Warnings: 0
+
+mysql> SELECT*FROM EMPLOYEE_AUDIT;
++----------+--------+-------------+------------+------------+---------------------+
+| audit_id | emp_id | action_type | old_salary | new_salary | action_time         |
++----------+--------+-------------+------------+------------+---------------------+
+|        1 |    108 | INSERT      |       NULL |   40000.00 | 2026-09-15 10:19:55 |
+|        2 |    105 | INSERT      |   40000.00 |   70000.00 | 2026-09-15 10:26:14 |
++----------+--------+-------------+------------+------------+---------------------+
+
+DELIMITER //
+CREATE TRIGGER TRG_AFTER_UPDATE
+AFTER UPDATE 
+ON EMPLOYEES
+FOR EACH ROW
+BEGIN
+     INSERT INTO EMPLOYEE_AUDIT
+     (EMP_ID,ACTION_TYPE,OLD_SALARY,NEW_SALARY,ACTION_TIME)
+     VALUES
+     (NEW.EMP_ID,'UPDATE',OLD.SALARY,NEW.SALARY,NOW());
+END //
+
+----DELETE --
+
+DELIMITER //
+CREATE TRIGGER TRG_AFTER_DELETE
+AFTER DELETE 
+ON EMPLOYEES
+FOR EACH ROW
+BEGIN
+     INSERT INTO EMPLOYEE_AUDIT
+     (EMP_ID,ACTION_TYPE,OLD_SALARY,ACTION_TIME)
+     VALUES
+     (OLD.EMP_ID,'DELETE',OLD.SALARY,NOW());
+END //
+
+DELIMITER ;
+DELETE FROM EMPLOYEES WHERE EMP_ID=105;
+
+
+mysql> SELECT*FROM EMPLOYEE_AUDIT;
++----------+--------+-------------+------------+------------+---------------------+
+| audit_id | emp_id | action_type | old_salary | new_salary | action_time         |
++----------+--------+-------------+------------+------------+---------------------+
+|        1 |    108 | INSERT      |       NULL |   40000.00 | 2026-09-15 10:19:55 |
+|        2 |    105 | INSERT      |   40000.00 |   70000.00 | 2026-09-15 10:26:14 |
+|        3 |    105 | DELETE      |   70000.00 |       NULL | 2026-09-15 10:37:36 |
++----------+--------+-------------+------------+------------+---------------------+
