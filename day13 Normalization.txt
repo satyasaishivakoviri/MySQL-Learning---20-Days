@@ -1,0 +1,150 @@
+NORMALIZATION CONCEPTS
+
+1.1NF
+2.2NF
+3.3NF
+ 
+CREATE TABLE student_details (
+    ->     student_id INT,
+    ->     student_name VARCHAR(50),
+    ->     courses VARCHAR(100),
+    ->     trainers VARCHAR(100),
+    ->     trainer_phones VARCHAR(100)
+    -> );
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> INSERT INTO student_details
+    -> VALUES
+    -> (101, 'Ravi', 'Java, Python', 'Kumar, Ramesh', '9876543210, 9876543211'),
+    -> (102, 'Priya', 'Python, SQL', 'Ramesh, Suresh', '9876543211, 9876543212'),
+    -> (103, 'Arun', 'Java, SQL', 'Kumar, Suresh', '9876543210, 9876543212');
+Query OK, 3 rows affected (0.01 sec)
+Records: 3  Duplicates: 0  Warnings: 0
+
+mysql> SELECT*FROM STUDENT_DETAILS;
++------------+--------------+--------------+----------------+------------------------+
+| student_id | student_name | courses      | trainers       | trainer_phones         |
++------------+--------------+--------------+----------------+------------------------+
+|        101 | Ravi         | Java, Python | Kumar, Ramesh  | 9876543210, 9876543211 |
+|        102 | Priya        | Python, SQL  | Ramesh, Suresh | 9876543211, 9876543212 |
+|        103 | Arun         | Java, SQL    | Kumar, Suresh  | 9876543210, 9876543212 |
++------------+--------------+--------------+----------------+------------------------+
+3 rows in set (0.01 sec)
+
+1.1NF EXAMPLE
+--------------
+
+mysql> CREATE TABLE STUDENT_COURSE_1NF(
+    -> STUDENT_ID INT,
+    -> STUDENT_NAME VARCHAR(50),
+    -> COURSE VARCHAR(50),
+    -> TRAINER VARCHAR(50),
+    -> TRAINER_PHONE VARCHAR(15)
+    -> );
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> INSERT INTO STUDENT_COURSE_1NF
+    -> VALUES
+    -> (101, 'Ravi', 'Java', 'Kumar', '9876543210'),
+    -> (101, 'Ravi', 'Python', 'Ramesh', '9876543211'),
+    -> (102, 'Priya', 'Python', 'Ramesh', '9876543211'),
+    -> (102, 'Priya', 'SQL', 'Suresh', '9876543212'),
+    -> (103, 'Arun', 'Java', 'Kumar', '9876543210'),
+    -> (103, 'Arun', 'SQL', 'Suresh', '9876543212');
+Query OK, 6 rows affected (0.01 sec)
+Records: 6  Duplicates: 0  Warnings: 0
+
+mysql> SELECT*FROM STUDENT_COURSE_1NF;
++------------+--------------+--------+---------+---------------+
+| STUDENT_ID | STUDENT_NAME | COURSE | TRAINER | TRAINER_PHONE |
++------------+--------------+--------+---------+---------------+
+|        101 | Ravi         | Java   | Kumar   | 9876543210    |
+|        101 | Ravi         | Python | Ramesh  | 9876543211    |
+|        102 | Priya        | Python | Ramesh  | 9876543211    |
+|        102 | Priya        | SQL    | Suresh  | 9876543212    |
+|        103 | Arun         | Java   | Kumar   | 9876543210    |
+|        103 | Arun         | SQL    | Suresh  | 9876543212    |
++------------+--------------+--------+---------+---------------+
+6 rows in set (0.00 sec)
+
+2.2NF EXAMPLE:
+-------------
+mysql> CREATE TABLE STUDENT_2NF(
+    -> STUDENT_ID INT PRIMARY KEY,
+    -> STUDENT_NAME VARCHAR(20));
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> INSERT INTO STUDENT_2NF VALUES
+    -> (101,'Ravi'),
+    -> (102,'Priya'),
+    -> (103,'Arun');
+Query OK, 3 rows affected (0.01 sec)
+Records: 3  Duplicates: 0  Warnings: 0
+
+mysql> CREATE TABLE STUDENT_COURSE_ENROLL_2NF(
+    -> STUDENT_ID INT,
+    -> COURSE VARCHAR(50),
+    -> PRIMARY KEY(STUDENT_ID,COURSE));
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> INSERT INTO STUDENT_COURSE_ENROLL_2NF
+    -> VALUES
+    -> (101,'JAVA'),
+    -> (101,'PYTHON'),
+    -> (102,'PYTHON'),
+    -> (102,'SQL'),
+    -> (103,'JAVA'),
+    -> (103,'SQL');
+Query OK, 6 rows affected (0.02 sec)
+Records: 6  Duplicates: 0  Warnings: 0
+
+mysql> CREATE TABLE COURSE_TRAINER_2NF(
+    -> COURSE VARCHAR(30) PRIMARY KEY,
+    -> TRAINER VARCHAR(50),
+    -> TRAINER_PHONE VARCHAR(15));
+Query OK, 0 rows affected (0.04 sec)
+
+mysql> INSERT INTO COURSE_TRAINER_2NF
+    -> VALUES
+    -> ('Java', 'Kumar', '9876543210'),
+    -> ('Python', 'Ramesh', '9876543211'),
+    -> ('SQL', 'Suresh', '9876543212');
+Query OK, 3 rows affected (0.01 sec)
+Records: 3  Duplicates: 0  Warnings: 0
+
+3.3NF EXAMPLE:
+------------
+mysql> CREATE TABLE COURSE_TRAINER_3NF(
+    -> COURSE VARCHAR(30)PRIMARY KEY,
+    -> TRAINER VARCHAR(50));
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> INSERT INTO COURSE_TRAINER_3NF VALUES
+    -> ('Java', 'Kumar'),
+    -> ('Python', 'Ramesh'),
+    -> ('SQL', 'Suresh');
+Query OK, 3 rows affected (0.01 sec)
+Records: 3  Duplicates: 0  Warnings: 0
+
+mysql> CREATE TABLE TRAINER_PHONE_3NF (
+    -> TRAINER VARCHAR(50),
+    -> TRAINER_PHONE VARCHAR(30));
+Query OK, 0 rows affected (0.03 sec)
+
+mysql> INSERT INTO TRAINER_PHONE_3NF
+    -> VALUES
+    -> ('Kumar', '9876543210'),
+    -> ('Ramesh', '9876543211'),
+    -> ('Suresh', '9876543212');
+Query OK, 3 rows affected (0.01 sec)
+Records: 3  Duplicates: 0  Warnings: 0
+
+ENTITY RELATIONSHIPS:
+--------------------
+ONE TO ONE
+ONE TO MANY
+MANY TO ONE 
+MANY TO MANY
+
+DIAGRAMS
+--------
